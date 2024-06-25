@@ -1,52 +1,115 @@
-from functools import cache
-
-import sage.libs.lrcalc.lrcalc as lrcalc
 from sage.combinat.sf.sfa import is_SymmetricFunction
+from sage.rings.polynomial.polynomial_ring import is_PolynomialRing
 
 schur = SymmetricFunctions(QQ).schur()
 
-@cache
-def product_schurs(mu1, mu2):
-	return schur(mu1) * schur(mu2)
-
 class PolynomialCoefficientSchur:
-	
-	def __init__(self, coefficient_ring):
-		self.__coefficients = {}
-		if not sage.rings.polynomial.polynomial_ring.is_PolynomialRing(coefficient_ring):
-			raise TypeError("coefficient_ring should be a univariate polynomial ring")
-		self.__coefficient_ring = coefficient_ring
+
+	def __init__(self, sym_func=None, coeff_ring=None, coeff_dict=None):
+		
+		if coeff_ring is not None and not is_PolynomialRing(coeff_ring):
+			raise TypeError("Invalid coeff_ring: not a univariate polynomial ring")
+		self._coeff_ring = coeff_ring
+		
+		if sym_func is not None:
+			if coeff_dict is not None:
+				raise ValueError("__init__ only accept either sym_func or coeff_dict")
+			self._from_sym_func(sym_func)
+			
+		elif coeff_dict is not None:
+			self._set_coeff(coeff_dict)
+		
+		else:
+			self._coeff_dict = {}
 		return
 	
-	@classmethod
-	def from_symmetric_function(cls, symmetric_function, coefficient_ring):
-		if not is_SymmetricFunction(symmetric_function):
-			raise TypeError("symmetric_function should be a symmetric function")
-		result = cls(coefficient_ring)
-		degree = symmetric_function.degree()
+	def _from_sym_func(self, sym_func):
+		if not is_SymmetricFunction(sym_func):
+			raise TypeError("Invalid sym_func: not a symmetric function")
+		degree = sym_func.degree()
 		for d in range(degree, -1, -1): # d = degree, degree-1, ..., 0
 			for mu in Partitions(d).list():
-				coefficient = symmetric_function.scalar(schur(mu))
-				if coefficient == 0: continue
+				coeff = sym_func.scalar(schur(mu))
+				if coeff == 0: continue
 				result.set_coefficient(mu, coefficient)
-				symmetric_function -= coefficient * schur(mu)
-				if symmetric_function == 0:
+				sym_func -= coeff * schur(mu)
+				if sym_func == 0:
 					break
-			if symmetric_function == 0:
+			if sym_func == 0:
 				break
-		return result
+		return
 	
+	def _set_coeff(self, coeff_dict):
+		for key in coeff_dict:
+			self[key] = self.coeff_dict[key]
+		return
+
+	def __setitem__(self, key, value):
+		part = Partition(key)
+		if value == 0:
+			if part in self.coeff_dict:
+				del self.coeff_dict[part]
+			return
+		if self._coeff_ring is None:
+			ring = value.parent()
+			if is_PolynomialRing(ring):
+				self._coeff_ring = ring
+			elif ring != ZZ and ring != QQ:
+				raise ValueError("Invalid value: not a univariate polynomial over QQ")
+		else:
+			if not value in self._coeff_ring:
+				raise TypeError(f"Invalid value: not in {self._coeff_ring}")
+		self._coeff_dict[part] = value
+		return
+
+	def __getitem__(self, key):
+		part = Partition(key)
+		return self._coeff_dict[part] if part in self._coeff_dict else 0
+	
+	def __repr__(self):
+		if not self._coeff_dict:
+			return "0"
+		result = []
+		parts = list(self._coeff_dict.keys())
+		parts.sort(key = lambda mu: tuple([-sum(mu)] + list(mu)))
+		parts.reverse()
+		for part in parts:
+			coeff = self._coeff_dict[part]
+			if coeff in QQ:
+				if coeff > 0:
+					if coeff == 1:
+						result.append(f"s{part}")
+					else:
+						result.append(f"{coeff}*s{part}")
+				else:
+					if len(result) == 0:
+						if coeff == -1:
+							result.append(f"-s{part}")
+						else:
+							result.append(f"{coeff}*s{part}")
+					else:
+						result[-1] = "-"
+						if coeff == -1:
+							result.append(f"s{part}")
+						else:
+							result.append(f"{-coeff}*s{part}")
+			else:
+				result.append(f"({coeff})*s{part}")
+			result.append("+")
+		result.pop()
+		return " ".join(result)
+
 	def coefficient_ring(self):
-		return self.__coefficient_ring
+		return self._coeff_ring
 	
 	def schurs(self):
-		return self.__coefficients.keys()
+		return self._coeff_dict.keys()
 	
 	def coefficients(self):
-		return self.__coefficients.values()
+		return self._coeff_dict.values()
 	
 	def coefficient(self, mu):
-		return self.__coefficients[Partition(mu)] if Partition(mu) in self.__coefficients else 0
+		return self._coeff_dict[Partition(mu)] if Partition(mu) in self._coeff_dict else 0
 	
 	def set_coefficient(self, mu, coefficient):
 		if not coefficient in self.coefficient_ring():
@@ -65,39 +128,6 @@ class PolynomialCoefficientSchur:
 	
 	def degree(self):
 		return max(map(sum, self.schurs()))
-	
-	def __repr__(self):
-		if not bool(self.schurs()):
-			return "0"
-		result = []
-		schurs = list(self.schurs())
-		schurs.sort(key = lambda mu: tuple([-sum(mu)] + list(mu)))
-		schurs.reverse()
-		for mu in schurs:
-			coefficient = self.coefficient(mu)
-			if coefficient in QQ:
-				if coefficient > 0:
-					if coefficient == 1:
-						result.append(f"s{mu}")
-					else:
-						result.append(f"{coefficient}*s{mu}")
-				else:
-					if len(result) == 0:
-						if coefficient == -1:
-							result.append(f"-s{mu}")
-						else:
-							result.append(f"{coefficient}*s{mu}")
-					else:
-						result[-1] = "-"
-						if coefficient == -1:
-							result.append(f"s{mu}")
-						else:
-							result.append(f"{-coefficient}*s{mu}")
-			else:
-				result.append(f"({self.coefficient(mu)})*s{mu}")
-			result.append("+")
-		result.pop()
-		return " ".join(result)
 	
 	def __eq__(self, other):
 		if other == 0:
