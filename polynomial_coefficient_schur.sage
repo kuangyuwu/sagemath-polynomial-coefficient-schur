@@ -100,6 +100,22 @@ class PolynomialCoefficientSchur:
 			result.append("+")
 		result.pop()
 		return " ".join(result)
+		
+
+	
+	def degree(self):
+		return max(map(sum, self._coeff_dict.keys()))
+	
+	def evaluate(self, num):
+		if num not in QQ:
+			raise TypeError(f"Invalid num: not in QQ")
+		result = 0
+		for part in self._coeff_dict.keys():
+			f = self._coeff_dict[part]
+			result += f(num) * schur(part)
+		return result
+		
+		
 
 	def coefficient_ring(self):
 		return self._coeff_ring
@@ -118,18 +134,6 @@ class PolynomialCoefficientSchur:
 			raise TypeError(f"coefficient should be in {self.coefficient_ring()}")
 		self.__coefficients[Partition(mu)] = coefficient
 		return
-	
-	def evaluate(self, num):
-		if not num in QQ:
-			raise TypeError(f"num should be in QQ")
-		result = 0
-		for mu in self.schurs():
-			f = self.coefficient(mu)
-			result += f(num) * schur(mu)
-		return result
-	
-	def degree(self):
-		return max(map(sum, self.schurs()))
 	
 	def __eq__(self, other):
 		if other == 0:
