@@ -110,42 +110,27 @@ class PolynomialCoefficientSchur:
 		if num not in QQ:
 			raise TypeError(f"Invalid num: not in QQ")
 		result = 0
-		for part in self._coeff_dict.keys():
+		for part in self._coeff_dict:
 			f = self._coeff_dict[part]
 			result += f(num) * schur(part)
 		return result
 		
-		
-
-	def coefficient_ring(self):
+	def coeff_ring(self):
 		return self._coeff_ring
 	
-	def schurs(self):
-		return self._coeff_dict.keys()
-	
-	def coefficients(self):
-		return self._coeff_dict.values()
-	
-	def coefficient(self, mu):
-		return self._coeff_dict[Partition(mu)] if Partition(mu) in self._coeff_dict else 0
-	
-	def set_coefficient(self, mu, coefficient):
-		if not coefficient in self.coefficient_ring():
-			raise TypeError(f"coefficient should be in {self.coefficient_ring()}")
-		self.__coefficients[Partition(mu)] = coefficient
-		return
+
 	
 	def __eq__(self, other):
 		if other == 0:
-			return not bool(self.schurs())
+			return not self._coeff_dict
+		if is_SymmetricFunction(other):
+			return self == PolynomialCoefficientSchur(other)
 		if not isinstance(other, PolynomialCoefficientSchur):
 			return NotImplemented
-		if self.coefficient_ring() != other.coefficient_ring():
-			raise TypeError("the coefficient rings of the two PolynomialCoefficientSchur objects should be the same")
-		if self.schurs() != other.schurs():
+		if self._coeff_dict.keys() != other._coeff_dict.keys():
 			return False
-		for mu in self.schurs():
-			if self.coefficient(mu) != other.coefficient(mu):
+		for part in self._coeff_dict:
+			if self._coeff_dict[part] != other._coeff_dict[part]:
 				return False
 		return True
 	
@@ -153,32 +138,32 @@ class PolynomialCoefficientSchur:
 		return self
 	
 	def __neg__(self):
-		result = PolynomialCoefficientSchur(self.coefficient_ring())
-		for mu in self.schurs():
-			result.set_coefficient(mu, - self.coefficient(mu))
+		result = PolynomialCoefficientSchur()
+		for part in self._coeff_dict:
+			result[part] = - self[part]
 		return result
 	
 	def __add__(self, other):
 		if is_SymmetricFunction(other):
-			other = PolynomialCoefficientSchur.from_symmetric_function(other, self.coefficient_ring())
+			return self + PolynomialCoefficientSchur(other)
 		if not isinstance(other, PolynomialCoefficientSchur):
 			return NotImplemented
-		if self.coefficient_ring() != other.coefficient_ring():
-			raise TypeError("the coefficient rings of the two PolynomialCoefficientSchur objects should be the same")
-		result = PolynomialCoefficientSchur(self.coefficient_ring())
-		for mu in self.schurs():
-			if mu in other.schurs():
-				coefficient = self.coefficient(mu) + other.coefficient(mu)
-				if coefficient != 0:
-					result.set_coefficient(mu, coefficient)
-			else:
-				result.set_coefficient(mu, self.coefficient(mu))
-		for mu in other.schurs() - self.schurs():
-			result.set_coefficient(mu, other.coefficient(mu))
+		if self._coeff_ring is not None and other._coeff_ring is not None and self._coeff_ring != other._coeff_ring:
+			raise TypeError("Invalid operands: different coefficient rings")
+		result = PolynomialCoefficientSchur()
+		for part in self._coeff_dict:
+			result[part] = self[part] + other[part]
+		for part in other._coeff_dict:
+			if result[part] == 0:
+				result[part] = self[part] + other[part]
 		return result
 	
 	def __sub__(self, other):
 		return self + (- other)
+
+
+
+
 	
 	def scalar_multiplication(self, scalar):
 		if not scalar in self.coefficient_ring():

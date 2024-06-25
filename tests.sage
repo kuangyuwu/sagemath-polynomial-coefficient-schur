@@ -66,6 +66,7 @@ except ValueError as err:
 
 
 
+
 b = PolynomialCoefficientSchur(coeff_ring=R)
 print(b, b._coeff_dict, b._coeff_ring)
             # 0 {} Univariate Polynomial Ring in n over Rational Field
@@ -100,6 +101,10 @@ d = PolynomialCoefficientSchur(coeff_dict={Partition([1, 1]): 1, Partition([]): 
 print(d, d._coeff_dict, d._coeff_ring)
             # -s[] + s[1, 1] + (-k^3)*s[3, 2, 1] {[1, 1]: 1, []: -1, [3, 2, 1]: -k^3} Univariate Polynomial Ring in k over Rational Field
 
+
+
+
+
 print(a.degree(), b.degree(), c.degree(), d.degree())
             # 2 2 2 6
 a2 = a.evaluate(1/2)
@@ -113,3 +118,41 @@ except TypeError as err:
 e = PolynomialCoefficientSchur(coeff_dict={Partition([2, 1]): 2*n - 4, Partition([2,2,1]): -n^4})
 print(e.degree(), e.evaluate(2))
             # 5 -16*s[2, 2, 1]
+
+
+
+
+
+e2 = PolynomialCoefficientSchur()
+print(e2 == 0)
+            # True
+e2[[2,1]] = 2*n - 4
+e2[[2,2,1]] = -n^4
+print(e == e2)
+            # True
+c4 = 3 * schur([1,1]) - 2 * schur([])
+print(c == c4)
+            # True
+print(d == e, d != e)
+            # False True
+f1 = PolynomialCoefficientSchur(coeff_dict={Partition([3]): n})
+f2 = PolynomialCoefficientSchur(coeff_dict={Partition([3]): k})
+print(f1 == f2, f1 != f2)
+            # False True
+
+
+g1 = PolynomialCoefficientSchur(coeff_dict={Partition([3]): n, Partition([2,1]): 3, Partition([1,1,1]): 2*n^2 + 3, Partition([1,1]): 2})
+g2 = PolynomialCoefficientSchur(coeff_dict={Partition([3]): -n, Partition([2,1]): 3, Partition([1,1,1]): n^2 + 4*n, Partition([3,1]): n - 4})
+g3 = PolynomialCoefficientSchur((1/2) * schur([3]) - 3 * schur([2,2])) 
+print(+g1)
+            # 2*s[1, 1] + (n)*s[3] + 3*s[2, 1] + (2*n^2 + 3)*s[1, 1, 1]
+print(-g1)
+            # -2*s[1, 1] + (-n)*s[3] - 3*s[2, 1] + (-2*n^2 - 3)*s[1, 1, 1]
+print(g1 + g2)
+            # 2*s[1, 1] + 6*s[2, 1] + (3*n^2 + 4*n + 3)*s[1, 1, 1] + (n - 4)*s[3, 1]
+print(g1 - g2)
+            # 2*s[1, 1] + (2*n)*s[3] + (n^2 - 4*n + 3)*s[1, 1, 1] + (-n + 4)*s[3, 1]
+print(g1 + g3)
+            # 2*s[1, 1] + (n + 1/2)*s[3] + 3*s[2, 1] + (2*n^2 + 3)*s[1, 1, 1] - 3*s[2, 2]
+print(g1 - g3)
+            # 2*s[1, 1] + (n - 1/2)*s[3] + 3*s[2, 1] + (2*n^2 + 3)*s[1, 1, 1] + 3*s[2, 2]
