@@ -9,18 +9,18 @@ class PolynomialCoefficientSchur:
 		
 		if coeff_ring is not None and not is_PolynomialRing(coeff_ring):
 			raise TypeError("Invalid coeff_ring: not a univariate polynomial ring")
-		self._coeff_ring = coeff_ring
 		
+		self._coeff_ring = coeff_ring
+		self._coeff_dict = {}
+
 		if sym_func is not None:
 			if coeff_dict is not None:
-				raise ValueError("__init__ only accept either sym_func or coeff_dict")
+				raise ValueError("__init__ does not accept both sym_func and coeff_dict")
 			self._from_sym_func(sym_func)
 			
 		elif coeff_dict is not None:
 			self._set_coeff(coeff_dict)
 		
-		else:
-			self._coeff_dict = {}
 		return
 	
 	def _from_sym_func(self, sym_func):
@@ -28,11 +28,11 @@ class PolynomialCoefficientSchur:
 			raise TypeError("Invalid sym_func: not a symmetric function")
 		degree = sym_func.degree()
 		for d in range(degree, -1, -1): # d = degree, degree-1, ..., 0
-			for mu in Partitions(d).list():
-				coeff = sym_func.scalar(schur(mu))
+			for part in Partitions(d).list():
+				coeff = sym_func.scalar(schur(part))
 				if coeff == 0: continue
-				result.set_coefficient(mu, coefficient)
-				sym_func -= coeff * schur(mu)
+				self[part] = coeff
+				sym_func -= coeff * schur(part)
 				if sym_func == 0:
 					break
 			if sym_func == 0:
@@ -41,21 +41,23 @@ class PolynomialCoefficientSchur:
 	
 	def _set_coeff(self, coeff_dict):
 		for key in coeff_dict:
-			self[key] = self.coeff_dict[key]
+			self[key] = coeff_dict[key]
 		return
 
 	def __setitem__(self, key, value):
 		part = Partition(key)
 		if value == 0:
-			if part in self.coeff_dict:
-				del self.coeff_dict[part]
+			if part in self._coeff_dict:
+				del self._coeff_dict[part]
 			return
 		if self._coeff_ring is None:
 			ring = value.parent()
 			if is_PolynomialRing(ring):
 				self._coeff_ring = ring
-			elif ring != ZZ and ring != QQ:
-				raise ValueError("Invalid value: not a univariate polynomial over QQ")
+			elif value not in QQ:
+				raise TypeError("Invalid value: not a univariate polynomial over QQ")
+			else:
+				value = QQ(value)
 		else:
 			if not value in self._coeff_ring:
 				raise TypeError(f"Invalid value: not in {self._coeff_ring}")
