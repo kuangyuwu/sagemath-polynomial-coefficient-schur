@@ -91,6 +91,11 @@ c2 = PolynomialCoefficientSchur(3 * schur([1,1]) - 2 * schur([]), R)
 print(c2, c2._coeff_dict, c2._coeff_ring)
             # -2*s[] + 3*s[1, 1] {[1, 1]: 3, []: -2} Univariate Polynomial Ring in n over Rational Field
 try:
+    c4 = PolynomialCoefficientSchur(58)
+except TypeError as err:
+    print(f"TypeError: \"{err}\"")
+            # TypeError: "Invalid sym_func: not a symmetric function"
+try:
     c3 = PolynomialCoefficientSchur(3 * schur([1,1]) - 2 * schur([]), coeff_dict={Partition([1, 1]): 3, Partition([]): -2})
 except ValueError as err:
     print(f"ValueError: \"{err}\"")
@@ -156,3 +161,59 @@ print(g1 + g3)
             # 2*s[1, 1] + (n + 1/2)*s[3] + 3*s[2, 1] + (2*n^2 + 3)*s[1, 1, 1] - 3*s[2, 2]
 print(g1 - g3)
             # 2*s[1, 1] + (n - 1/2)*s[3] + 3*s[2, 1] + (2*n^2 + 3)*s[1, 1, 1] + 3*s[2, 2]
+g4 = PolynomialCoefficientSchur(coeff_dict={Partition([1]): k})
+try:
+    print(g1 + g4)
+except ValueError as err:
+    print(f"ValueError: \"{err}\"")
+            # ValueError: "Invalid operands: different coefficient rings"
+
+
+
+
+print(g1.smul(-3/2))
+            # -3*s[1, 1] + (-3/2*n)*s[3] - 9/2*s[2, 1] + (-3*n^2 - 9/2)*s[1, 1, 1]
+print(g1.smul(2 * n - 1))
+            # (4*n - 2)*s[1, 1] + (2*n^2 - n)*s[3] + (6*n - 3)*s[2, 1] + (4*n^3 - 2*n^2 + 6*n - 3)*s[1, 1, 1] 
+h1 = PolynomialCoefficientSchur(coeff_dict={Partition([2]): n - 1, Partition([1,1]): 1/2})
+h2 = 2 * schur([2]) - (1/4) * schur([1,1])
+print(g1 * h1)
+            # (2*n - 2)*s[3, 1] + s[2, 2] + (2*n - 1)*s[2, 1, 1] + s[1, 1, 1, 1] + (n^2 - n)*s[5] + (n^2 + 5/2*n - 3)*s[4, 1] + (n^2 + 2*n - 3/2)*s[3, 2] + (2*n^3 - 2*n^2 + 13/2*n - 9/2)*s[3, 1, 1] + (n^2 + 3*n)*s[2, 2, 1] + (2*n^3 - n^2 + 3*n)*s[2, 1, 1, 1] + (n^2 + 3/2)*s[1, 1, 1, 1, 1]
+print(h1 * g1)
+            # (2*n - 2)*s[3, 1] + s[2, 2] + (2*n - 1)*s[2, 1, 1] + s[1, 1, 1, 1] + (n^2 - n)*s[5] + (n^2 + 5/2*n - 3)*s[4, 1] + (n^2 + 2*n - 3/2)*s[3, 2] + (2*n^3 - 2*n^2 + 13/2*n - 9/2)*s[3, 1, 1] + (n^2 + 3*n)*s[2, 2, 1] + (2*n^3 - n^2 + 3*n)*s[2, 1, 1, 1] + (n^2 + 3/2)*s[1, 1, 1, 1, 1]
+print(g1 * h2)
+            # 4*s[3, 1] - 1/2*s[2, 2] + 7/2*s[2, 1, 1] - 1/2*s[1, 1, 1, 1] + (2*n)*s[5] + (7/4*n + 6)*s[4, 1] + (2*n + 21/4)*s[3, 2] + (4*n^2 - 1/4*n + 45/4)*s[3, 1, 1] + (-1/2*n^2 + 9/2)*s[2, 2, 1] + (7/2*n^2 + 9/2)*s[2, 1, 1, 1] + (-1/2*n^2 - 3/4)*s[1, 1, 1, 1, 1]
+print(h2 * g1)
+            # 4*s[3, 1] - 1/2*s[2, 2] + 7/2*s[2, 1, 1] - 1/2*s[1, 1, 1, 1] + (2*n)*s[5] + (7/4*n + 6)*s[4, 1] + (2*n + 21/4)*s[3, 2] + (4*n^2 - 1/4*n + 45/4)*s[3, 1, 1] + (-1/2*n^2 + 9/2)*s[2, 2, 1] + (7/2*n^2 + 9/2)*s[2, 1, 1, 1] + (-1/2*n^2 - 3/4)*s[1, 1, 1, 1, 1]
+print(h1 ^ 2, h1 * h1)
+            # (n^2 - 2*n + 1)*s[4] + (n^2 - n)*s[3, 1] + (n^2 - 2*n + 5/4)*s[2, 2] + (n - 3/4)*s[2, 1, 1] + 1/4*s[1, 1, 1, 1] (n^2 - 2*n + 1)*s[4] + (n^2 - n)*s[3, 1] + (n^2 - 2*n + 5/4)*s[2, 2] + (n - 3/4)*s[2, 1, 1] + 1/4*s[1, 1, 1, 1]
+print(h1 ^ 3, h1 * h1 * h1)
+            # (n^3 - 3*n^2 + 3*n - 1)*s[6] + (2*n^3 - 9/2*n^2 + 3*n - 1/2)*s[5, 1] + (3*n^3 - 15/2*n^2 + 27/4*n - 9/4)*s[4, 2] + (n^3 - 9/4*n + 5/4)*s[4, 1, 1] + (n^3 - 3/2*n^2 + 5/8)*s[3, 3] + (2*n^3 - 3*n^2 + 3/2*n - 1/4)*s[3, 2, 1] + (3/2*n^2 - 3/2*n + 1/8)*s[3, 1, 1, 1] + (n^3 - 3*n^2 + 15/4*n - 13/8)*s[2, 2, 2] + (3/2*n^2 - 9/4*n + 9/8)*s[2, 2, 1, 1] + (3/4*n - 1/2)*s[2, 1, 1, 1, 1] + 1/8*s[1, 1, 1, 1, 1, 1] (n^3 - 3*n^2 + 3*n - 1)*s[6] + (2*n^3 - 9/2*n^2 + 3*n - 1/2)*s[5, 1] + (3*n^3 - 15/2*n^2 + 27/4*n - 9/4)*s[4, 2] + (n^3 - 9/4*n + 5/4)*s[4, 1, 1] + (n^3 - 3/2*n^2 + 5/8)*s[3, 3] + (2*n^3 - 3*n^2 + 3/2*n - 1/4)*s[3, 2, 1] + (3/2*n^2 - 3/2*n + 1/8)*s[3, 1, 1, 1] + (n^3 - 3*n^2 + 15/4*n - 13/8)*s[2, 2, 2] + (3/2*n^2 - 9/4*n + 9/8)*s[2, 2, 1, 1] + (3/4*n - 1/2)*s[2, 1, 1, 1, 1] + 1/8*s[1, 1, 1, 1, 1, 1]
+
+zero = PolynomialCoefficientSchur()
+print(zero == 0)
+            # True
+print(+zero, type(+zero))
+            # 0 <class '__main__.PolynomialCoefficientSchur'>
+print(-zero, type(-zero))
+            # 0 <class '__main__.PolynomialCoefficientSchur'>
+print(zero + h1)
+            # (n - 1)*s[2] + 1/2*s[1, 1]
+print(h1 + zero)
+            # (n - 1)*s[2] + 1/2*s[1, 1]
+print(zero - h1)
+            # (-n + 1)*s[2] - 1/2*s[1, 1]
+print(h1 - zero)
+            # (n - 1)*s[2] + 1/2*s[1, 1]
+print(h1.smul(0), type(h1.smul(0)))
+            # 0 <class '__main__.PolynomialCoefficientSchur'>
+print(zero.smul(-5/7), type(zero.smul(-5/7)))
+            # 0 <class '__main__.PolynomialCoefficientSchur'>
+print(zero.smul(n^8), type(zero.smul(n^8)))
+            # 0 <class '__main__.PolynomialCoefficientSchur'>
+print(zero * h1, type(zero * h1))
+            # 0 <class '__main__.PolynomialCoefficientSchur'>
+print(h1 * zero, type(h1 * zero))
+            # 0 <class '__main__.PolynomialCoefficientSchur'>
+print(zero ^ 11, type(zero ^ 11))
+            # 0 <class '__main__.PolynomialCoefficientSchur'>

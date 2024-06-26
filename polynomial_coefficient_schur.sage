@@ -149,7 +149,11 @@ class PolynomialCoefficientSchur:
 		if not isinstance(other, PolynomialCoefficientSchur):
 			return NotImplemented
 		if self._coeff_ring is not None and other._coeff_ring is not None and self._coeff_ring != other._coeff_ring:
-			raise TypeError("Invalid operands: different coefficient rings")
+			raise ValueError("Invalid operands: different coefficient rings")
+		if self == 0:
+			return other
+		if other == 0:
+			return self
 		result = PolynomialCoefficientSchur()
 		for part in self._coeff_dict:
 			result[part] = self[part] + other[part]
@@ -160,46 +164,54 @@ class PolynomialCoefficientSchur:
 	
 	def __sub__(self, other):
 		return self + (- other)
-
-
-
-
 	
-	def scalar_multiplication(self, scalar):
-		if not scalar in self.coefficient_ring():
-			raise TypeError(f"scalar should be in {self.coefficient_ring()}")
-		result = PolynomialCoefficientSchur(self.coefficient_ring())
-		for mu in self.schurs():
-			result.set_coefficient(mu, self.coefficient(mu) * scalar)
+	def smul(self, scalar):
+		if self._coeff_ring is None:
+			ring = scalar.parent()
+			if is_PolynomialRing(ring):
+				self._coeff_ring = ring
+			elif scalar not in QQ:
+				raise TypeError("Invalid scalar: not a univariate polynomial over QQ")
+			else:
+				scalar = QQ(scalar)
+		elif scalar not in self._coeff_ring:
+			raise TypeError(f"Invalid scalar: not in {self._coeff_ring}")
+		if self == 0:
+			return PolynomialCoefficientSchur()
+		result = PolynomialCoefficientSchur()
+		for part in self._coeff_dict:
+			result[part] = self[part] * scalar
 		return result
 	
 	def __mul__(self, other):
 		if is_SymmetricFunction(other):
-			other = PolynomialCoefficientSchur.from_symmetric_function(other, self.coefficient_ring())
+			return self * PolynomialCoefficientSchur(other)
 		if not isinstance(other, PolynomialCoefficientSchur):
 			return NotImplemented
-		if self.coefficient_ring() != other.coefficient_ring():
-			raise TypeError("the coefficient rings of the two PolynomialCoefficientSchur objects should be the same")
-		result = PolynomialCoefficientSchur(self.coefficient_ring())
-		for mu1 in self.schurs():
-			for mu2 in other.schurs():
-				coefficient = self.coefficient(mu1) * other.coefficient(mu2)
-				product = PolynomialCoefficientSchur.from_symmetric_function(product_schurs(mu1, mu2), self.coefficient_ring())
-				result += (product.scalar_multiplication(coefficient))
+		if self._coeff_ring is not None and other._coeff_ring is not None and self._coeff_ring != other._coeff_ring:
+			raise ValueError("Invalid operands: different coefficient rings")
+		if self == 0 or other == 0:
+			return PolynomialCoefficientSchur()
+		result = PolynomialCoefficientSchur()
+		for part1 in self._coeff_dict:
+			for part2 in other._coeff_dict:
+				coeff = self[part1] * other[part2]
+				product = PolynomialCoefficientSchur(schur[part1] * schur[part2])
+				result += product.smul(coeff)
 		return result
 	
 	def __rmul__(self, other):
 		return self.__mul__(other)
 	
 	def __pow__(self, other):
-		if not other in ZZ or other < 0:
+		if other not in ZZ or other < 0:
 			return NotImplemented
 		if other == 0:
 			return schur([])
 		if other == 1:
 			return self
 		else:
-			return (self ** (other >> 1)) * (self ** ((other + 1) >> 1))
+			return self * (self ** (other - 1))
 
 
 
