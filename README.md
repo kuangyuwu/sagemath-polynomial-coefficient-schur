@@ -1,1 +1,1 @@
-# sagemath-polynomial-coefficient-schur
+# Polynomial-coefficient Schur symmetric functions (Sagemath)

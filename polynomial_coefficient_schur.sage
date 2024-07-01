@@ -5,10 +5,26 @@ schur = SymmetricFunctions(QQ).schur()
 
 class PolynomialCoefficientSchur:
 
+
 	def __init__(self, sym_func=None, coeff_ring=None, coeff_dict=None):
+
+		r"""
+		Parameters:
+		symm_func (optional): the (constant-coefficient) symmetric function to be casted to polynomial-coefficient Schur
+		coeff_ring (optional): the polynomial ring that the coefficients live in
+		coeff_dict (optional): the dictionary representing the coefficient of the polynomial-coefficient Schur, with each key being a partition and the corresponding value being the coefficient of the Schur indexed by the partition
+
+		Raises:
+		ValueError: if both sym_func and coeff_dict are provided
+		TypeError: if the coeff_ring is not a univariate polynomial ring over QQ
+		           if the sym_func is not QQ-coefficient
+				   if a key in coeff_dict is not a partition
+				   if a value in coeff_dict is not in coeff_ring (if not None)
+				   if two values in coeff_dict are not in the same univariate polynomial rings
+		"""
 		
-		if coeff_ring is not None and not is_PolynomialRing(coeff_ring):
-			raise TypeError("Invalid coeff_ring: not a univariate polynomial ring")
+		if coeff_ring is not None and (not is_PolynomialRing(coeff_ring) or coeff_ring.base_ring() != QQ):
+			raise TypeError("Invalid coeff_ring: not a univariate polynomial ring over QQ")
 		
 		self._coeff_ring = coeff_ring
 		self._coeff_dict = {}
@@ -22,6 +38,92 @@ class PolynomialCoefficientSchur:
 			self._set_coeff(coeff_dict)
 		
 		return
+	
+
+	def degree(self):
+
+		r"""
+		returns the degree of the polynomial-coefficient Schur
+		the degree is the highest sum of all partitions corresponding to Schur functions with non-zero coefficients
+
+		Returns:
+		int: the degree of the polynomial-coefficient Schur
+		"""
+
+		return max(map(sum, self._coeff_dict.keys()))
+	
+
+	def evaluate(self, num):
+
+		r"""
+		substitute the number for the variable in the coefficients and return the result
+		(if coeff_ring is None (implying all coefficients are constant), the method returns self as a constant-coefficient symmetric function)
+
+		Parameters:
+		num: a rational number to be substituted
+
+		Returns:
+		symmetric function (in Schur bases)
+		"""
+
+		if num not in QQ:
+			raise TypeError(f"Invalid num: not in QQ")
+		result = 0
+		if self._coeff_ring is None:
+			for part in self._coeff_dict:
+				f = self._coeff_dict[part]
+				result += f * schur(part)
+		else:
+			for part in self._coeff_dict:
+				f = self._coeff_dict[part]
+				result += f(num) * schur(part)
+		return result
+		
+
+	def coeff_ring(self):
+
+		r"""
+		returns the coefficient ring (or None if not set)
+
+		Returns:
+		univariate polynomial ring over QQ (or None)
+		"""
+
+		return self._coeff_ring
+	
+
+	def smul(self, scalar):
+
+		r"""
+		multiply self by the scalar and return the result (scalar multiplication)
+
+		Parameters:
+		scalar: a polynomial or a rational number
+
+		Returns:
+		polynomial-coefficient-schur
+
+		Raises:
+		TypeError: if the scalar is not in the coefficient ring (if already set)
+		           if the scalar is not a univariate polynomial over QQ
+		"""
+
+		if self._coeff_ring is None:
+			ring = scalar.parent()
+			if is_PolynomialRing(ring):
+				self._coeff_ring = ring
+			elif scalar not in QQ:
+				raise TypeError("Invalid scalar: not a univariate polynomial over QQ")
+			else:
+				scalar = QQ(scalar)
+		elif scalar not in self._coeff_ring:
+			raise TypeError(f"Invalid scalar: not in {self._coeff_ring}")
+		if self == 0:
+			return PolynomialCoefficientSchur()
+		result = PolynomialCoefficientSchur()
+		for part in self._coeff_dict:
+			result[part] = self[part] * scalar
+		return result
 	
 	def _from_sym_func(self, sym_func):
 		if not is_SymmetricFunction(sym_func):
@@ -52,7 +154,7 @@ class PolynomialCoefficientSchur:
 			return
 		if self._coeff_ring is None:
 			ring = value.parent()
-			if is_PolynomialRing(ring):
+			if is_PolynomialRing(ring) and ring.base_ring() == QQ:
 				self._coeff_ring = ring
 			elif value not in QQ:
 				raise TypeError("Invalid value: not a univariate polynomial over QQ")
@@ -100,23 +202,6 @@ class PolynomialCoefficientSchur:
 			result.append("+")
 		result.pop()
 		return " ".join(result)
-		
-
-	
-	def degree(self):
-		return max(map(sum, self._coeff_dict.keys()))
-	
-	def evaluate(self, num):
-		if num not in QQ:
-			raise TypeError(f"Invalid num: not in QQ")
-		result = 0
-		for part in self._coeff_dict:
-			f = self._coeff_dict[part]
-			result += f(num) * schur(part)
-		return result
-		
-	def coeff_ring(self):
-		return self._coeff_ring
 	
 
 	
@@ -164,24 +249,6 @@ class PolynomialCoefficientSchur:
 	
 	def __sub__(self, other):
 		return self + (- other)
-	
-	def smul(self, scalar):
-		if self._coeff_ring is None:
-			ring = scalar.parent()
-			if is_PolynomialRing(ring):
-				self._coeff_ring = ring
-			elif scalar not in QQ:
-				raise TypeError("Invalid scalar: not a univariate polynomial over QQ")
-			else:
-				scalar = QQ(scalar)
-		elif scalar not in self._coeff_ring:
-			raise TypeError(f"Invalid scalar: not in {self._coeff_ring}")
-		if self == 0:
-			return PolynomialCoefficientSchur()
-		result = PolynomialCoefficientSchur()
-		for part in self._coeff_dict:
-			result[part] = self[part] * scalar
-		return result
 	
 	def __mul__(self, other):
 		if is_SymmetricFunction(other):
