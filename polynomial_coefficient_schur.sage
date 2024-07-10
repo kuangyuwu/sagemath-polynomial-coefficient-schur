@@ -7,22 +7,22 @@ class PolynomialCoefficientSchur:
 
 
 	def __init__(self, sym_func=None, coeff_ring=None, coeff_dict=None):
-
 		r"""
+		Initialize a PolynomialCoefficientSchur object.
+
 		Parameters:
-		symm_func (optional): the (constant-coefficient) symmetric function to be casted to polynomial-coefficient Schur
-		coeff_ring (optional): the polynomial ring that the coefficients live in
-		coeff_dict (optional): the dictionary representing the coefficient of the polynomial-coefficient Schur, with each key being a partition and the corresponding value being the coefficient of the Schur indexed by the partition
+		sym_func (symmetric function, optional): The constant-coefficient symmetric function to be cast to polynomial-coefficient Schur.
+		coeff_ring (PolynomialRing, optional): The polynomial ring that the coefficients belong to.
+		coeff_dict (dict, optional): Dictionary representing the coefficients of the polynomial-coefficient Schur. Each key is a partition and the corresponding value is the coefficient of the Schur function indexed by that partition.
 
 		Raises:
-		ValueError: if both sym_func and coeff_dict are provided
-		TypeError: if the coeff_ring is not a univariate polynomial ring over QQ
-		           if the sym_func is not QQ-coefficient
-				   if a key in coeff_dict is not a partition
-				   if a value in coeff_dict is not in coeff_ring (if not None)
-				   if two values in coeff_dict are not in the same univariate polynomial rings
+		ValueError: If both sym_func and coeff_dict are provided.
+		TypeError: If coeff_ring is not a univariate polynomial ring over QQ.
+				   If sym_func is not QQ-coefficient.
+				   If a key in coeff_dict is not a partition.
+				   If a value in coeff_dict is not in coeff_ring (if not None).
+				   If two values in coeff_dict are not in the same univariate polynomial ring.
 		"""
-		
 		if coeff_ring is not None and (not is_PolynomialRing(coeff_ring) or coeff_ring.base_ring() != QQ):
 			raise TypeError("Invalid coeff_ring: not a univariate polynomial ring over QQ")
 		
@@ -41,31 +41,34 @@ class PolynomialCoefficientSchur:
 	
 
 	def degree(self):
-
 		r"""
-		returns the degree of the polynomial-coefficient Schur
-		the degree is the highest sum of all partitions corresponding to Schur functions with non-zero coefficients
+		Return the degree of the polynomial-coefficient Schur function.
+		Return -1 if self == 0.
+
+		The degree is the highest sum of all partitions corresponding to Schur functions with non-zero coefficients.
 
 		Returns:
-		int: the degree of the polynomial-coefficient Schur
+		int: The degree of the polynomial-coefficient Schur function.
 		"""
-
+		if self == 0:
+			return -1
 		return max(map(sum, self._coeff_dict.keys()))
 	
 
 	def evaluate(self, num):
-
 		r"""
-		substitute the number for the variable in the coefficients and return the result
-		(if coeff_ring is None (implying all coefficients are constant), the method returns self as a constant-coefficient symmetric function)
+		Substitute a number for the variable in the coefficients and return the result.
+		If coeff_ring is None (implying all coefficients are constant), the method returns self as a constant-coefficient symmetric function.
 
 		Parameters:
-		num: a rational number to be substituted
+		num (Rational): A rational number to be substituted.
 
 		Returns:
-		symmetric function (in Schur bases)
-		"""
+		SymmetricFunction: The resulting symmetric function in Schur basis.
 
+		Raises:
+		TypeError: If num is not a rational number.
+		"""
 		if num not in QQ:
 			raise TypeError(f"Invalid num: not in QQ")
 		result = 0
@@ -78,36 +81,34 @@ class PolynomialCoefficientSchur:
 				f = self._coeff_dict[part]
 				result += f(num) * schur(part)
 		return result
-		
+
+	def __call__(self, num):
+		return self.evaluate(num)	
 
 	def coeff_ring(self):
-
 		r"""
-		returns the coefficient ring (or None if not set)
+		Return the coefficient ring (or None if not set).
 
 		Returns:
-		univariate polynomial ring over QQ (or None)
+		PolynomialRing or None: The coefficient ring.
 		"""
-
 		return self._coeff_ring
 	
 
 	def smul(self, scalar):
-
 		r"""
-		multiply self by the scalar and return the result (scalar multiplication)
+		Multiply self by the scalar and return the result (scalar multiplication)
 
 		Parameters:
-		scalar: a polynomial or a rational number
+		scalar (Polynomial or Rational): a polynomial or a rational number
 
 		Returns:
-		polynomial-coefficient-schur
+		PolynomialCoefficientSchur: The resulting polynomial-coefficient Schur function.
 
 		Raises:
-		TypeError: if the scalar is not in the coefficient ring (if already set)
-		           if the scalar is not a univariate polynomial over QQ
+		TypeError: If the scalar is not in the coefficient ring (if already set)
+		           If the scalar is not a univariate polynomial over QQ
 		"""
-
 		if self._coeff_ring is None:
 			ring = scalar.parent()
 			if is_PolynomialRing(ring):
@@ -126,6 +127,15 @@ class PolynomialCoefficientSchur:
 		return result
 	
 	def _from_sym_func(self, sym_func):
+		r"""
+		Convert a symmetric function to a polynomial-coefficient Schur function.
+
+		Parameters:
+		sym_func (SymmetricFunction): The symmetric function to convert.
+
+		Raises:
+		TypeError: If sym_func is not a symmetric function.
+		"""
 		if not is_SymmetricFunction(sym_func):
 			raise TypeError("Invalid sym_func: not a symmetric function")
 		degree = sym_func.degree()
@@ -142,11 +152,27 @@ class PolynomialCoefficientSchur:
 		return
 	
 	def _set_coeff(self, coeff_dict):
+		r"""
+		Set the coefficients of the polynomial-coefficient Schur function from a dictionary.
+
+		Parameters:
+		coeff_dict (dict): Dictionary representing the coefficients of the polynomial-coefficient Schur.
+		"""
 		for key in coeff_dict:
 			self[key] = coeff_dict[key]
 		return
 
 	def __setitem__(self, key, value):
+		r"""
+		Set the coefficient of a particular Schur function indexed by a partition.
+
+		Parameters:
+		key (Partition): The partition indexing the Schur function.
+		value (Polynomial or Rational): The coefficient to set.
+
+		Raises:
+		TypeError: If value is not a valid coefficient in the polynomial ring.
+		"""
 		part = Partition(key)
 		if value == 0:
 			if part in self._coeff_dict:
@@ -167,10 +193,25 @@ class PolynomialCoefficientSchur:
 		return
 
 	def __getitem__(self, key):
+		r"""
+		Get the coefficient of a particular Schur function indexed by a partition.
+
+		Parameters:
+		key (Partition): The partition indexing the Schur function.
+
+		Returns:
+		Polynomial or rational number: The coefficient of the Schur function.
+		"""
 		part = Partition(key)
 		return self._coeff_dict[part] if part in self._coeff_dict else 0
 	
 	def __repr__(self):
+		r"""
+		Return a string representation of the polynomial-coefficient Schur function.
+
+		Returns:
+		str: The string representation of the polynomial-coefficient Schur function.
+		"""
 		if not self._coeff_dict:
 			return "0"
 		result = []
@@ -206,12 +247,24 @@ class PolynomialCoefficientSchur:
 
 	
 	def __eq__(self, other):
+		r"""
+		Check if two polynomial-coefficient Schur functions are equal.
+
+		Parameters:
+		other (PolynomialCoefficientSchur or SymmetricFunction): The other function to compare.
+
+		Returns:
+		bool: True if the functions are equal, False otherwise.
+
+		Raises:
+		NotImplemented Error: If the other function is not PolynomialCoefficientSchur.
+		"""
 		if other == 0:
 			return not self._coeff_dict
 		if is_SymmetricFunction(other):
 			return self == PolynomialCoefficientSchur(other)
 		if not isinstance(other, PolynomialCoefficientSchur):
-			return NotImplemented
+			raise NotImplementedError
 		if self._coeff_dict.keys() != other._coeff_dict.keys():
 			return False
 		for part in self._coeff_dict:
@@ -220,19 +273,44 @@ class PolynomialCoefficientSchur:
 		return True
 	
 	def __pos__(self):
+		r"""
+		Return the positive of the polynomial-coefficient Schur function (self).
+
+		Returns:
+		PolynomialCoefficientSchur: The positive of the function.
+		"""
 		return self
 	
 	def __neg__(self):
+		r"""
+		Return the negation of the polynomial-coefficient Schur function.
+
+		Returns:
+		PolynomialCoefficientSchur: The negation of the function.
+		"""
 		result = PolynomialCoefficientSchur()
 		for part in self._coeff_dict:
 			result[part] = - self[part]
 		return result
 	
 	def __add__(self, other):
+		r"""
+		Add two polynomial-coefficient Schur functions.
+
+		Parameters:
+		other (PolynomialCoefficientSchur or a symmetric function): The other function to add.
+
+		Returns:
+		PolynomialCoefficientSchur: The sum of the two functions.
+
+		Raises:
+		NotImplemented Error: If the other function is not PolynomialCoefficientSchur or a symmetric function.
+		ValueError: If the coefficient rings of the two functions are different.
+		"""
 		if is_SymmetricFunction(other):
 			return self + PolynomialCoefficientSchur(other)
 		if not isinstance(other, PolynomialCoefficientSchur):
-			return NotImplemented
+			raise NotImplementedError
 		if self._coeff_ring is not None and other._coeff_ring is not None and self._coeff_ring != other._coeff_ring:
 			raise ValueError("Invalid operands: different coefficient rings")
 		if self == 0:
@@ -248,13 +326,39 @@ class PolynomialCoefficientSchur:
 		return result
 	
 	def __sub__(self, other):
+		r"""
+		Subtract one polynomial-coefficient Schur function from another.
+
+		Parameters:
+		other (PolynomialCoefficientSchur or a symmetric function): The other function to subtract.
+
+		Returns:
+		PolynomialCoefficientSchur: The result of the subtraction.
+
+		Raises:
+		NotImplemented Error: If the other function is not PolynomialCoefficientSchur or a symmetric function.
+		ValueError: If the coefficient rings of the two functions are different.
+		"""
 		return self + (- other)
 	
 	def __mul__(self, other):
+		r"""
+		Multiply two polynomial-coefficient Schur functions.
+
+		Parameters:
+		other (PolynomialCoefficientSchur or a symmetric function): The other function to multiply.
+
+		Returns:
+		PolynomialCoefficientSchur: The product of the two functions.
+
+		Raises:
+		NotImplemented Error: If the other function is not PolynomialCoefficientSchur or a symmetric function.
+		ValueError: If the coefficient rings of the two functions are different.
+		"""
 		if is_SymmetricFunction(other):
 			return self * PolynomialCoefficientSchur(other)
 		if not isinstance(other, PolynomialCoefficientSchur):
-			return NotImplemented
+			raise NotImplementedError("Use the method smul() for scalar multiplication")
 		if self._coeff_ring is not None and other._coeff_ring is not None and self._coeff_ring != other._coeff_ring:
 			raise ValueError("Invalid operands: different coefficient rings")
 		if self == 0 or other == 0:
@@ -271,8 +375,20 @@ class PolynomialCoefficientSchur:
 		return self.__mul__(other)
 	
 	def __pow__(self, other):
+		r"""
+		Raise the polynomial-coefficient Schur function to a power.
+
+		Parameters:
+		other (int): The exponent to raise to.
+
+		Returns:
+		PolynomialCoefficientSchur: The result of the exponentiation.
+
+		Raises:
+		NotImplemented Error: If the exponent is not a non-negative integer.
+		"""
 		if other not in ZZ or other < 0:
-			return NotImplemented
+			raise NotImplementedError
 		if other == 0:
 			return schur([])
 		if other == 1:
